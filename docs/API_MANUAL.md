@@ -89,6 +89,53 @@ Base URL：`http://<host>:<port>`
 
 ---
 
+
+### 3.4 GET `/api/notifications/simulated`
+取得「模擬通知接收端」目前收到的通知清單。
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "recipient": "ops-team@example.com",
+    "uid": 1001,
+    "from": "Alive",
+    "to": "Dead",
+    "category": "正常→異常",
+    "trigger": "probe",
+    "result": "503 ServiceUnavailable",
+    "receivedUtc": "2026-01-01T08:00:03+00:00"
+  }
+]
+```
+
+### 3.5 POST `/api/notifications/simulated`
+手動送一筆通知到模擬接收端（整合測試用）。
+
+#### Request Body
+`DeviceStatusTransition` JSON，例如：
+```json
+{
+  "uid": 1001,
+  "from": "Alive",
+  "to": "Dead",
+  "trigger": "api",
+  "result": "manual test",
+  "occurredUtc": "2026-01-01T08:00:03+00:00"
+}
+```
+
+#### Response
+- `202 Accepted`
+
+### 3.6 DELETE `/api/notifications/simulated`
+清空模擬接收端佇列。
+
+#### Response
+- `204 No Content`
+
+
 ## 4. 狀態欄位說明（DeviceState）
 - `uid`：設備 ID。
 - `status`：`Unknown` / `Alive` / `Busy` / `Dead`。

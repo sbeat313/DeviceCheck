@@ -22,8 +22,9 @@ builder.Services
     .Validate(o => o.NotificationRecipients.TrueForAll(x => !string.IsNullOrWhiteSpace(x)), "DeviceCheck:NotificationRecipients 不能包含空白收件人")
     .ValidateOnStart();
 
-// 註冊核心服務：狀態儲存、探測 HTTP Client、通知、背景檢查服務
+// 註冊核心服務：狀態儲存、探測 HTTP Client、通知、模擬接收端、背景檢查服務
 builder.Services.AddSingleton<DeviceRegistry>();
+builder.Services.AddSingleton<SimulatedNotificationReceiver>();
 builder.Services.AddSingleton<DeviceNotificationService>();
 builder.Services.AddHttpClient<DeviceProbeClient>();
 builder.Services.AddHostedService<DeviceMonitorService>();
@@ -55,6 +56,23 @@ app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
     DeviceState? state = registry.Get(uid);
     return state is null ? Results.NotFound(new { uid, message = "uid not tracked" }) : Results.Ok(state);
+});
+
+// 模擬通知接收端 API：查看已接收通知
+app.MapGet("/api/notifications/simulated", (SimulatedNotificationReceiver receiver) => Results.Ok(receiver.GetAll()));
+
+// 模擬通知接收端 API：手動塞入通知（方便整合測試）
+app.MapPost("/api/notifications/simulated", (DeviceStatusTransition transition, SimulatedNotificationReceiver receiver) =>
+{
+    receiver.Receive("manual-test", transition);
+    return Results.Accepted();
+});
+
+// 模擬通知接收端 API：清空佇列
+app.MapDelete("/api/notifications/simulated", (SimulatedNotificationReceiver receiver) =>
+{
+    receiver.Clear();
+    return Results.NoContent();
 });
 
 app.Run();

@@ -42,6 +42,7 @@
 3. 使用 `GET /api/devices` 檢查設備狀態。
 4. 設備端可定期呼叫 `POST /api/devices/{uid}/heartbeat`。
 5. 監看 NLog 輸出中的 `[Notify]` 記錄以掌握狀態切換通知。
+6. 透過 `GET /api/notifications/simulated` 可查看模擬接收端已收到的通知。
 
 ---
 
@@ -49,3 +50,12 @@
 - 若啟動失敗，先檢查 `DeviceCheck` 設定驗證錯誤訊息。
 - 若大量 `Dead`，確認 `BaseUrl`、網路連線、設備服務狀態。
 - 若沒有通知，確認 `NotificationRecipients` 是否有設定。
+
+
+---
+
+## 5. 模擬通知接收端使用方式
+1. 先呼叫 `DELETE /api/notifications/simulated` 清空舊資料。
+2. 觸發設備狀態切換（例如讓設備離線、再恢復，或送 heartbeat）。
+3. 呼叫 `GET /api/notifications/simulated` 檢查是否收到「正常→異常」或「異常→正常」通知。
+4. 若要手動驗證接收端，可呼叫 `POST /api/notifications/simulated` 塞入測試資料。

@@ -7,7 +7,10 @@ namespace DeviceCheck.Services;
 /// <summary>
 /// 設備狀態轉換通知服務。
 /// </summary>
-public sealed class DeviceNotificationService(IOptions<DeviceCheckOptions> options, ILogger<DeviceNotificationService> logger)
+public sealed class DeviceNotificationService(
+    IOptions<DeviceCheckOptions> options,
+    SimulatedNotificationReceiver simulatedReceiver,
+    ILogger<DeviceNotificationService> logger)
 {
     private readonly IReadOnlyList<string> _recipients = options.Value.NotificationRecipients
         .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -29,6 +32,8 @@ public sealed class DeviceNotificationService(IOptions<DeviceCheckOptions> optio
 
         foreach (string recipient in _recipients)
         {
+            simulatedReceiver.Receive(recipient, transition);
+
             logger.LogWarning(
                 "[Notify] To={Recipient}, UID={Uid}, Category={Category}, From={From}, To={To}, Trigger={Trigger}, Result={Result}, AtUtc={AtUtc:O}",
                 recipient,
