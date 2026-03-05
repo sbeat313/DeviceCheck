@@ -43,7 +43,7 @@ public sealed class DeviceProbeClient
                 return (DeviceHealthStatus.Busy, "486 BusyHere");
             }
 
-            // 依需求：503 視為 Dead（不再視為 Busy）
+            // 依需求：503 視為 Dead
             return (DeviceHealthStatus.Dead, $"{(int)response.StatusCode} {response.StatusCode}");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

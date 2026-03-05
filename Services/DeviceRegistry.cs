@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using DeviceCheck.Models;
 using DeviceCheck.Options;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 
 namespace DeviceCheck.Services;
 
@@ -36,19 +36,19 @@ public sealed class DeviceRegistry
     /// <summary>
     /// 取得全部設備狀態（依 UID 排序）。
     /// </summary>
-    public IReadOnlyCollection<DeviceState> GetAll() => _devices.Values.OrderBy(x => x.Uid).ToArray();
+    public IReadOnlyCollection<DeviceState> GetAll() => [.. _devices.Values.OrderBy(x => x.Uid)];
 
     /// <summary>
     /// 取得單一設備狀態；若未列管則回傳 null。
     /// </summary>
-    public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out DeviceState state) ? state : null;
+    public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out DeviceState? state) ? state : null;
 
     /// <summary>
     /// 處理設備心跳：更新 LastSeen 並把 NextCheck 往後延。
     /// </summary>
     public bool Touch(int uid)
     {
-        if (!_devices.TryGetValue(uid, out DeviceState state))
+        if (!_devices.TryGetValue(uid, out DeviceState? state))
         {
             return false;
         }
@@ -70,7 +70,7 @@ public sealed class DeviceRegistry
     /// </summary>
     public IReadOnlyList<DeviceState> DueForCheck(DateTimeOffset now)
     {
-        List<DeviceState> due = new List<DeviceState>();
+        List<DeviceState> due = [];
 
         foreach (DeviceState state in _devices.Values)
         {
