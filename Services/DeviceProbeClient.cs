@@ -24,7 +24,7 @@ public sealed class DeviceProbeClient
     /// <summary>
     /// 探測指定 UID：
     /// - 200 => Alive
-    /// - body 含 busy => Busy
+    /// - 503 => Busy
     /// - 其他/錯誤 => Dead
     /// </summary>
     public async Task<(DeviceHealthStatus status, string result)> ProbeAsync(int uid, CancellationToken cancellationToken)
@@ -33,16 +33,14 @@ public sealed class DeviceProbeClient
         {
             var url = BuildUrl(uid);
             using var response = await _httpClient.GetAsync(url, cancellationToken);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-
             if (response.IsSuccessStatusCode)
             {
                 return (DeviceHealthStatus.Alive, "200 OK");
             }
 
-            if (body.Contains("busy", StringComparison.OrdinalIgnoreCase))
+            if ((int)response.StatusCode == StatusCodes.Status503ServiceUnavailable)
             {
-                return (DeviceHealthStatus.Busy, $"busy ({response.StatusCode})");
+                return (DeviceHealthStatus.Busy, "503 ServiceUnavailable");
             }
 
             return (DeviceHealthStatus.Dead, $"{(int)response.StatusCode} {response.StatusCode}");
@@ -59,12 +57,11 @@ public sealed class DeviceProbeClient
     }
 
     /// <summary>
-    /// 組合最終探測 URL：{BaseUrl}/{uid}。
+    /// 組合最終探測 URL：{BaseUrl}/Ctrl/{uid}/RadioCheck。
     /// </summary>
     private string BuildUrl(int uid)
     {
-        return _options.BaseUrl.EndsWith('/')
-            ? $"{_options.BaseUrl}{uid}"
-            : $"{_options.BaseUrl}/{uid}";
+        var baseUrl = _options.BaseUrl.TrimEnd('/');
+        return $"{baseUrl}/Ctrl/{uid}/RadioCheck";
     }
 }

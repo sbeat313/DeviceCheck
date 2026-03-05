@@ -11,8 +11,8 @@ public sealed class DeviceCheckOptions
     public const string SectionName = "DeviceCheck";
 
     /// <summary>
-    /// 外部設備檢查 API 的基底網址，例如 https://host/api/device。
-    /// 實際呼叫時會在後面附上 /{uid}。
+    /// 外部設備服務主機網址，例如 http://192.168.0.58:5099。
+    /// 實際呼叫時會組成 /Ctrl/{uid}/RadioCheck。
     /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
 
@@ -29,7 +29,7 @@ public sealed class DeviceCheckOptions
     /// <summary>
     /// 呼叫外部 API 的逾時秒數。
     /// </summary>
-    public int RequestTimeoutSeconds { get; set; } = 5;
+    public int RequestTimeoutSeconds { get; set; } = 10;
 
     /// <summary>
     /// 需要列管的設備 UID 清單。
