@@ -37,7 +37,7 @@ Base URL 範例：`http://localhost:5000`
 
 ## 2. DeviceCheck.Notifier 通知接收 API
 
-Base URL 範例：`http://localhost:5058`
+Base URL（預設固定）: `http://127.0.0.1:5058`
 
 ### 2.1 接收狀態轉換通知
 - **Method**: `POST`
