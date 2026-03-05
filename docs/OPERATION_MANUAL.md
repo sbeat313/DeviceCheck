@@ -3,19 +3,15 @@
 ## 1. 設定
 `appsettings.json` 的 `DeviceCheck`：
 - `DecisionThresholdCount`：連續判定門檻。
-- `NotificationEndpoints`：通知接收端 URL 清單（例如 `http://localhost:6001/api/notifications`）。
+- `NotificationEndpoints`：通知接收 URL 清單（可設定真實外部系統 Endpoint）。
 
-## 2. 啟動方式（兩個服務）
-1. 啟動通知接收端：
-   - `cd NotificationReceiver`
-   - `dotnet run --urls http://0.0.0.0:6001`
-2. 啟動 DeviceCheck：
-   - `dotnet run --urls http://0.0.0.0:5000`
+## 2. 啟動主程式
+- `dotnet run --urls http://0.0.0.0:5000`
 
-## 3. 驗證流程
-1. 用 `GET /api/devices` 觀察設備狀態，未達門檻前應為 `Unknown`。
-2. 製造連續異常（或連續恢復）直到達門檻。
-3. 呼叫通知接收端 `GET /api/notifications`，確認收到通知。
+## 3. 驗證通知（用獨立 UnitTest 方案）
+- 方案：`NotificationReceiver.UnitTests/NotificationReceiver.UnitTests.sln`
+- 測試：`DeviceNotificationServiceReceiverTests`
+- 測試會自行啟本機 HTTP 接收端，檢查主程式通知 payload 是否成功送達。
 
 ## 4. 說明
-目前僅保留「獨立 NotificationReceiver 服務」作為通知接收端，專案內已移除舊的模擬接收程式碼。
+你要求的接收端已改為「獨立 UnitTest 方案」，不再額外維護另一個常駐服務專案。
