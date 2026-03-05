@@ -1,3 +1,4 @@
+using DeviceCheck.Models;
 using DeviceCheck.Options;
 using DeviceCheck.Services;
 using NLog.Web;
@@ -18,21 +19,32 @@ builder.Services
     .Validate(o => o.BusyRetryDelaySeconds > 0, "DeviceCheck:BusyRetryDelaySeconds 必須大於 0")
     .Validate(o => o.RequestTimeoutSeconds > 0, "DeviceCheck:RequestTimeoutSeconds 必須大於 0")
     .Validate(o => o.Uids.Count > 0, "DeviceCheck:Uids 不能為空")
+    .Validate(o => o.NotificationRecipients.TrueForAll(x => !string.IsNullOrWhiteSpace(x)), "DeviceCheck:NotificationRecipients 不能包含空白收件人")
     .ValidateOnStart();
 
-// 註冊核心服務：狀態儲存、探測 HTTP Client、背景檢查服務
+// 註冊核心服務：狀態儲存、探測 HTTP Client、通知、背景檢查服務
 builder.Services.AddSingleton<DeviceRegistry>();
+builder.Services.AddSingleton<DeviceNotificationService>();
 builder.Services.AddHttpClient<DeviceProbeClient>();
 builder.Services.AddHostedService<DeviceMonitorService>();
 
 WebApplication app = builder.Build();
 
 // 心跳 API：設備主動回報存活，系統會將該 UID 的下次檢查時間往後延
-app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registry) =>
+app.MapPost("/api/devices/{uid:int}/heartbeat", async (int uid, DeviceRegistry registry, DeviceNotificationService notificationService) =>
 {
-    return registry.Touch(uid)
-        ? Results.Ok(new { uid, message = "heartbeat accepted" })
-        : Results.NotFound(new { uid, message = "uid not tracked" });
+    bool touched = registry.Touch(uid, out DeviceStatusTransition? transition);
+    if (!touched)
+    {
+        return Results.NotFound(new { uid, message = "uid not tracked" });
+    }
+
+    if (transition is not null)
+    {
+        await notificationService.NotifyTransitionAsync(transition, CancellationToken.None);
+    }
+
+    return Results.Ok(new { uid, message = "heartbeat accepted" });
 });
 
 // 取得所有設備狀態 API
@@ -41,7 +53,7 @@ app.MapGet("/api/devices", (DeviceRegistry registry) => Results.Ok(registry.GetA
 // 取得單一設備狀態 API
 app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
-    DeviceCheck.Models.DeviceState? state = registry.Get(uid);
+    DeviceState? state = registry.Get(uid);
     return state is null ? Results.NotFound(new { uid, message = "uid not tracked" }) : Results.Ok(state);
 });
 

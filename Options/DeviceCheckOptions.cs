@@ -35,4 +35,10 @@ public sealed class DeviceCheckOptions
     /// 需要列管的設備 UID 清單。
     /// </summary>
     public List<int> Uids { get; set; } = [];
+
+    /// <summary>
+    /// 通知收件對象（可填姓名、群組名稱或電子郵件）。
+    /// 當設備狀態從「正常(Alive)」變「異常(非 Alive)」或反向變化時會發送通知。
+    /// </summary>
+    public List<string> NotificationRecipients { get; set; } = [];
 }
