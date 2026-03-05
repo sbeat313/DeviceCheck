@@ -31,8 +31,8 @@ public sealed class DeviceProbeClient
     {
         try
         {
-            var url = BuildUrl(uid);
-            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            string url = BuildUrl(uid);
+            using HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return (DeviceHealthStatus.Alive, "200 OK");
@@ -62,7 +62,7 @@ public sealed class DeviceProbeClient
     /// </summary>
     private string BuildUrl(int uid)
     {
-        var baseUrl = _options.BaseUrl.TrimEnd('/');
+        string baseUrl = _options.BaseUrl.TrimEnd('/');
         return $"{baseUrl}/Ctrl/{uid}/RadioCheck";
     }
 }

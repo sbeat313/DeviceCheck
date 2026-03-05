@@ -3,7 +3,7 @@ using DeviceCheck.Services;
 using NLog.Web;
 
 // 建立 ASP.NET Core WebApplication builder
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // 啟用 NLog：改由 NLog 接管日誌輸出
 builder.Logging.ClearProviders();
@@ -25,7 +25,7 @@ builder.Services.AddSingleton<DeviceRegistry>();
 builder.Services.AddHttpClient<DeviceProbeClient>();
 builder.Services.AddHostedService<DeviceMonitorService>();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // 心跳 API：設備主動回報存活，系統會將該 UID 的下次檢查時間往後延
 app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registry) =>
@@ -41,7 +41,7 @@ app.MapGet("/api/devices", (DeviceRegistry registry) => Results.Ok(registry.GetA
 // 取得單一設備狀態 API
 app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
-    var state = registry.Get(uid);
+    DeviceCheck.Models.DeviceState? state = registry.Get(uid);
     return state is null ? Results.NotFound(new { uid, message = "uid not tracked" }) : Results.Ok(state);
 });
 

@@ -18,11 +18,11 @@ public sealed class DeviceRegistry
 
     public DeviceRegistry(IOptions<DeviceCheckOptions> options)
     {
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         _checkInterval = TimeSpan.FromSeconds(options.Value.CheckIntervalSeconds);
 
         // 初始化所有列管設備。Distinct() 可避免重複 UID。
-        foreach (var uid in options.Value.Uids.Distinct())
+        foreach (int uid in options.Value.Uids.Distinct())
         {
             _devices.TryAdd(uid, new DeviceState
             {
@@ -41,21 +41,21 @@ public sealed class DeviceRegistry
     /// <summary>
     /// 取得單一設備狀態；若未列管則回傳 null。
     /// </summary>
-    public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out var state) ? state : null;
+    public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out DeviceState state) ? state : null;
 
     /// <summary>
     /// 處理設備心跳：更新 LastSeen 並把 NextCheck 往後延。
     /// </summary>
     public bool Touch(int uid)
     {
-        if (!_devices.TryGetValue(uid, out var state))
+        if (!_devices.TryGetValue(uid, out DeviceState state))
         {
             return false;
         }
 
         lock (state)
         {
-            var now = DateTimeOffset.UtcNow;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
             state.LastSeenUtc = now;
             state.NextCheckUtc = now.Add(_checkInterval);
             state.Status = DeviceHealthStatus.Alive;
@@ -70,9 +70,9 @@ public sealed class DeviceRegistry
     /// </summary>
     public IReadOnlyList<DeviceState> DueForCheck(DateTimeOffset now)
     {
-        var due = new List<DeviceState>();
+        List<DeviceState> due = new List<DeviceState>();
 
-        foreach (var state in _devices.Values)
+        foreach (DeviceState state in _devices.Values)
         {
             lock (state)
             {
@@ -93,7 +93,7 @@ public sealed class DeviceRegistry
     /// </summary>
     public void UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
     {
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
         lock (state)
         {

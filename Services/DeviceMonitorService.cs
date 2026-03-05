@@ -34,17 +34,17 @@ public sealed class DeviceMonitorService : BackgroundService
     /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            var dueDevices = _registry.DueForCheck(DateTimeOffset.UtcNow);
-            foreach (var device in dueDevices)
+            IReadOnlyList<DeviceState> dueDevices = _registry.DueForCheck(DateTimeOffset.UtcNow);
+            foreach (DeviceState device in dueDevices)
             {
-                var (status, result) = await _probeClient.ProbeAsync(device.Uid, stoppingToken);
+                (DeviceHealthStatus status, string result) = await _probeClient.ProbeAsync(device.Uid, stoppingToken);
 
                 // busy 使用短延遲重試，其餘使用一般週期。
-                var delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
+                TimeSpan delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
                 _registry.UpdateAfterProbe(device, status, result, delay);
 
                 _logger.LogInformation(
