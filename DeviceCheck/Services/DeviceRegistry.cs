@@ -91,12 +91,14 @@ public sealed class DeviceRegistry
     /// <summary>
     /// 套用探測結果並安排下次檢查時間。
     /// </summary>
-    public void UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
+    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
+        DeviceStatusTransition? transition = null;
 
         lock (state)
         {
+            DeviceHealthStatus previousStatus = state.Status;
             state.Status = status;
             state.LastCheckedUtc = now;
             state.LastResult = result;
@@ -108,6 +110,27 @@ public sealed class DeviceRegistry
             }
 
             state.NextCheckUtc = now.Add(nextDelay);
+
+            if (HasNormalAbnormalChanged(previousStatus, status))
+            {
+                transition = new DeviceStatusTransition
+                {
+                    Uid = state.Uid,
+                    FromStatus = previousStatus,
+                    ToStatus = status,
+                    OccurredAtUtc = now,
+                    Result = result
+                };
+            }
         }
+
+        return transition;
+    }
+
+    private static bool HasNormalAbnormalChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
+    {
+        bool previousNormal = previous == DeviceHealthStatus.Alive;
+        bool currentNormal = current == DeviceHealthStatus.Alive;
+        return previousNormal != currentNormal;
     }
 }

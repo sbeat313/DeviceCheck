@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceCheck", "DeviceCheck\DeviceCheck.csproj", "{C8A783DA-86A8-4E9A-B424-52E54FFAFD0D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceCheck.Notifier", "DeviceCheck.Notifier\DeviceCheck.Notifier.csproj", "{63664EDE-3B5F-412C-B087-C8F35796DDAA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C8A783DA-86A8-4E9A-B424-52E54FFAFD0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8A783DA-86A8-4E9A-B424-52E54FFAFD0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8A783DA-86A8-4E9A-B424-52E54FFAFD0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8A783DA-86A8-4E9A-B424-52E54FFAFD0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63664EDE-3B5F-412C-B087-C8F35796DDAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63664EDE-3B5F-412C-B087-C8F35796DDAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63664EDE-3B5F-412C-B087-C8F35796DDAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63664EDE-3B5F-412C-B087-C8F35796DDAA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

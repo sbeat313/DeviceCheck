@@ -7,7 +7,7 @@ namespace DeviceCheck.Services;
 /// <summary>
 /// 背景監控服務：定期找出到期設備並執行探測。
 /// </summary>
-public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeClient probeClient, IOptions<DeviceCheckOptions> options, ILogger<DeviceMonitorService> logger) : BackgroundService
+public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeClient probeClient, NotificationClient notificationClient, IOptions<DeviceCheckOptions> options, ILogger<DeviceMonitorService> logger) : BackgroundService
 {
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(options.Value.CheckIntervalSeconds);
     private readonly TimeSpan _busyRetryDelay = TimeSpan.FromSeconds(options.Value.BusyRetryDelaySeconds);
@@ -28,7 +28,12 @@ public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeCli
 
                 // busy 使用短延遲重試，其餘使用一般週期。
                 TimeSpan delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
-                registry.UpdateAfterProbe(device, status, result, delay);
+                DeviceStatusTransition? transition = registry.UpdateAfterProbe(device, status, result, delay);
+
+                if (transition is not null)
+                {
+                    await notificationClient.SendStatusTransitionAsync(transition, stoppingToken);
+                }
 
                 logger.LogInformation(
                     "UID {Uid} check result: {Status} ({Result}), next check in {Delay}s",

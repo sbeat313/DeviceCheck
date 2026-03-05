@@ -2,14 +2,11 @@ using DeviceCheck.Options;
 using DeviceCheck.Services;
 using NLog.Web;
 
-// 建立 ASP.NET Core WebApplication builder
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// 啟用 NLog：改由 NLog 接管日誌輸出
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 
-// 綁定並驗證 DeviceCheck 設定，啟動時就先檢查避免執行中才失敗
 builder.Services
     .AddOptions<DeviceCheckOptions>()
     .Bind(builder.Configuration.GetSection(DeviceCheckOptions.SectionName))
@@ -20,14 +17,20 @@ builder.Services
     .Validate(o => o.Uids.Count > 0, "DeviceCheck:Uids 不能為空")
     .ValidateOnStart();
 
-// 註冊核心服務：狀態儲存、探測 HTTP Client、背景檢查服務
+builder.Services
+    .AddOptions<NotificationOptions>()
+    .Bind(builder.Configuration.GetSection(NotificationOptions.SectionName))
+    .Validate(o => !o.Enabled || Uri.TryCreate(o.EndpointUrl, UriKind.Absolute, out _), "Notification:EndpointUrl 必須是合法的絕對 URL")
+    .Validate(o => !o.Enabled || o.Recipients.Count > 0, "Notification:Recipients 在啟用通知時不能為空")
+    .ValidateOnStart();
+
 builder.Services.AddSingleton<DeviceRegistry>();
 builder.Services.AddHttpClient<DeviceProbeClient>();
+builder.Services.AddHttpClient<NotificationClient>();
 builder.Services.AddHostedService<DeviceMonitorService>();
 
 WebApplication app = builder.Build();
 
-// 心跳 API：設備主動回報存活，系統會將該 UID 的下次檢查時間往後延
 app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registry) =>
 {
     return registry.Touch(uid)
@@ -35,10 +38,8 @@ app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registr
         : Results.NotFound(new { uid, message = "uid not tracked" });
 });
 
-// 取得所有設備狀態 API
 app.MapGet("/api/devices", (DeviceRegistry registry) => Results.Ok(registry.GetAll()));
 
-// 取得單一設備狀態 API
 app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
     DeviceCheck.Models.DeviceState? state = registry.Get(uid);
