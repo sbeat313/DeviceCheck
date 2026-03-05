@@ -18,5 +18,4 @@
 3. 呼叫通知接收端 `GET /api/notifications`，確認收到通知。
 
 ## 4. 說明
-你之前看到的「模擬接收端」是嵌在同個服務內、偏測試用途。
-現在改為「獨立 NotificationReceiver 服務」，可當作真正外部接收程式部署。
+目前僅保留「獨立 NotificationReceiver 服務」作為通知接收端，專案內已移除舊的模擬接收程式碼。
