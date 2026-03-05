@@ -24,8 +24,8 @@ public sealed class DeviceProbeClient
     /// <summary>
     /// 探測指定 UID：
     /// - 200 => Alive
-    /// - 503 => Busy
-    /// - 其他/錯誤 => Dead
+    /// - 486 => Busy
+    /// - 503 與其他 => Dead
     /// </summary>
     public async Task<(DeviceHealthStatus status, string result)> ProbeAsync(int uid, CancellationToken cancellationToken)
     {
@@ -38,11 +38,12 @@ public sealed class DeviceProbeClient
                 return (DeviceHealthStatus.Alive, "200 OK");
             }
 
-            if ((int)response.StatusCode == StatusCodes.Status503ServiceUnavailable)
+            if ((int)response.StatusCode == 486)
             {
-                return (DeviceHealthStatus.Busy, "503 ServiceUnavailable");
+                return (DeviceHealthStatus.Busy, "486 BusyHere");
             }
 
+            // 依需求：503 視為 Dead（不再視為 Busy）
             return (DeviceHealthStatus.Dead, $"{(int)response.StatusCode} {response.StatusCode}");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

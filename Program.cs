@@ -1,8 +1,13 @@
 using DeviceCheck.Options;
 using DeviceCheck.Services;
+using NLog.Web;
 
 // 建立 ASP.NET Core WebApplication builder
 var builder = WebApplication.CreateBuilder(args);
+
+// 啟用 NLog：改由 NLog 接管日誌輸出
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
 // 綁定並驗證 DeviceCheck 設定，啟動時就先檢查避免執行中才失敗
 builder.Services
