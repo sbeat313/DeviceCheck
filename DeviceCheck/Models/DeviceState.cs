@@ -22,4 +22,7 @@ public sealed class DeviceState
 
     /// <summary>最後一次檢查結果訊息。</summary>
     public string LastResult { get; set; } = "not checked";
+
+    /// <summary>連續 dead 探測次數。</summary>
+    public int ConsecutiveDeadCount { get; set; }
 }

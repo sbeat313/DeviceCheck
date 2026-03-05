@@ -60,6 +60,7 @@ public sealed class DeviceRegistry
             state.NextCheckUtc = now.Add(_checkInterval);
             state.Status = DeviceHealthStatus.Alive;
             state.LastResult = "heartbeat";
+            state.ConsecutiveDeadCount = 0;
         }
 
         return true;
@@ -91,7 +92,7 @@ public sealed class DeviceRegistry
     /// <summary>
     /// 套用探測結果並安排下次檢查時間。
     /// </summary>
-    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
+    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay, int deadConsecutiveThreshold)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         DeviceStatusTransition? transition = null;
@@ -99,25 +100,26 @@ public sealed class DeviceRegistry
         lock (state)
         {
             DeviceHealthStatus previousStatus = state.Status;
-            state.Status = status;
             state.LastCheckedUtc = now;
             state.LastResult = result;
 
+            state.Status = ResolveStatusWithDeadThreshold(state, status, deadConsecutiveThreshold);
+
             // 只有確認存活時才刷新 LastSeen。
-            if (status == DeviceHealthStatus.Alive)
+            if (state.Status == DeviceHealthStatus.Alive)
             {
                 state.LastSeenUtc = now;
             }
 
             state.NextCheckUtc = now.Add(nextDelay);
 
-            if (HasNormalAbnormalChanged(previousStatus, status))
+            if (HasNormalAbnormalChanged(previousStatus, state.Status))
             {
                 transition = new DeviceStatusTransition
                 {
                     Uid = state.Uid,
                     FromStatus = previousStatus,
-                    ToStatus = status,
+                    ToStatus = state.Status,
                     OccurredAtUtc = now,
                     Result = result
                 };
@@ -125,6 +127,32 @@ public sealed class DeviceRegistry
         }
 
         return transition;
+    }
+
+    private static DeviceHealthStatus ResolveStatusWithDeadThreshold(DeviceState state, DeviceHealthStatus probedStatus, int deadConsecutiveThreshold)
+    {
+        if (probedStatus == DeviceHealthStatus.Alive)
+        {
+            state.ConsecutiveDeadCount = 0;
+            return DeviceHealthStatus.Alive;
+        }
+
+        if (probedStatus == DeviceHealthStatus.Busy)
+        {
+            state.ConsecutiveDeadCount = 0;
+            return DeviceHealthStatus.Busy;
+        }
+
+        if (probedStatus == DeviceHealthStatus.Dead)
+        {
+            state.ConsecutiveDeadCount++;
+            return state.ConsecutiveDeadCount >= deadConsecutiveThreshold
+                ? DeviceHealthStatus.Dead
+                : DeviceHealthStatus.Unknown;
+        }
+
+        state.ConsecutiveDeadCount = 0;
+        return DeviceHealthStatus.Unknown;
     }
 
     private static bool HasNormalAbnormalChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
