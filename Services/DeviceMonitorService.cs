@@ -4,6 +4,9 @@ using Microsoft.Extensions.Options;
 
 namespace DeviceCheck.Services;
 
+/// <summary>
+/// 背景監控服務：定期找出到期設備並執行探測。
+/// </summary>
 public sealed class DeviceMonitorService : BackgroundService
 {
     private readonly DeviceRegistry _registry;
@@ -26,6 +29,9 @@ public sealed class DeviceMonitorService : BackgroundService
         _busyRetryDelay = TimeSpan.FromSeconds(options.Value.BusyRetryDelaySeconds);
     }
 
+    /// <summary>
+    /// 主循環：每秒檢查一次是否有到期設備。
+    /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
@@ -36,6 +42,8 @@ public sealed class DeviceMonitorService : BackgroundService
             foreach (var device in dueDevices)
             {
                 var (status, result) = await _probeClient.ProbeAsync(device.Uid, stoppingToken);
+
+                // busy 使用短延遲重試，其餘使用一般週期。
                 var delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
                 _registry.UpdateAfterProbe(device, status, result, delay);
 
