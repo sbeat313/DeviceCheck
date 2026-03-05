@@ -9,6 +9,7 @@
   "CheckIntervalSeconds": 10,
   "BusyRetryDelaySeconds": 3,
   "RequestTimeoutSeconds": 10,
+  "DecisionThresholdCount": 3,
   "Uids": [1001, 1002, 1003],
   "NotificationRecipients": [
     "ops-team@example.com",
@@ -22,6 +23,7 @@
 - `CheckIntervalSeconds`：一般輪詢間隔。
 - `BusyRetryDelaySeconds`：當設備回傳 Busy (486) 時重試延遲。
 - `RequestTimeoutSeconds`：呼叫設備 API 的逾時秒數。
+- `DecisionThresholdCount`：連續判定次數；未達次數時狀態維持 `Unknown`。
 - `Uids`：列管設備 UID 清單（不可為空）。
 - `NotificationRecipients`：通知對象清單（不可包含空白字串）。
 
@@ -32,7 +34,7 @@
 - 正常 → 異常（`Alive` → `Busy/Dead/...`）
 - 異常 → 正常（`Busy/Dead/Unknown` → `Alive`）
 
-通知目前以日誌輸出，格式含：收件對象、UID、轉換方向、前後狀態、觸發來源（`probe` 或 `heartbeat`）、結果與時間。
+通知目前以日誌輸出 + 模擬接收端保存，格式含：收件對象、UID、轉換方向、前後狀態、觸發來源（`probe` 或 `heartbeat`）、結果與時間。
 
 ---
 

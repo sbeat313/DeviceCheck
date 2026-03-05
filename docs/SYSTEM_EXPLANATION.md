@@ -15,7 +15,9 @@
    - `200` => `Alive`
    - `486` => `Busy`
    - 其他 / timeout / exception => `Dead`
-4. 若狀態從 `Alive` 與「非 Alive」之間切換，觸發通知。
+4. 探測結果會先進入連續判定計數；未達 `DecisionThresholdCount` 前狀態為 `Unknown`。
+5. 達到次數後才會成為最終 `Alive` 或 `Busy/Dead`。
+6. 若最終狀態跨越正常(`Alive`)與異常(`Busy/Dead`)邊界，觸發通知。
 
 
 ## 模擬接收端資料流

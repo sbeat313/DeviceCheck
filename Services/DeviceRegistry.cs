@@ -10,16 +10,26 @@ namespace DeviceCheck.Services;
 /// </summary>
 public sealed class DeviceRegistry
 {
+    private sealed class DeviceDecisionState
+    {
+        public int AliveStreak { get; set; }
+        public int AbnormalStreak { get; set; }
+        public DeviceHealthStatus LastFinalStatus { get; set; } = DeviceHealthStatus.Unknown;
+    }
+
     // 使用 ConcurrentDictionary 儲存設備狀態，key 為 UID。
     private readonly ConcurrentDictionary<int, DeviceState> _devices = new();
+    private readonly ConcurrentDictionary<int, DeviceDecisionState> _decisionStates = new();
 
     // 一般檢查間隔（由設定注入）。
     private readonly TimeSpan _checkInterval;
+    private readonly int _decisionThresholdCount;
 
     public DeviceRegistry(IOptions<DeviceCheckOptions> options)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         _checkInterval = TimeSpan.FromSeconds(options.Value.CheckIntervalSeconds);
+        _decisionThresholdCount = options.Value.DecisionThresholdCount;
 
         // 初始化所有列管設備。Distinct() 可避免重複 UID。
         foreach (int uid in options.Value.Uids.Distinct())
@@ -30,6 +40,8 @@ public sealed class DeviceRegistry
                 LastSeenUtc = now,
                 NextCheckUtc = now
             });
+
+            _decisionStates.TryAdd(uid, new DeviceDecisionState());
         }
     }
 
@@ -45,13 +57,13 @@ public sealed class DeviceRegistry
 
     /// <summary>
     /// 處理設備心跳：更新 LastSeen 並把 NextCheck 往後延。
-    /// 若跨越正常/異常邊界，會回傳轉換事件。
+    /// 心跳視為立即恢復正常判定。
     /// </summary>
     public bool Touch(int uid, out DeviceStatusTransition? transition)
     {
         transition = null;
 
-        if (!_devices.TryGetValue(uid, out DeviceState? state))
+        if (!_devices.TryGetValue(uid, out DeviceState? state) || !_decisionStates.TryGetValue(uid, out DeviceDecisionState? decisionState))
         {
             return false;
         }
@@ -59,20 +71,24 @@ public sealed class DeviceRegistry
         lock (state)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            DeviceHealthStatus before = state.Status;
+            DeviceHealthStatus beforeFinal = decisionState.LastFinalStatus;
 
             state.LastSeenUtc = now;
             state.NextCheckUtc = now.Add(_checkInterval);
             state.Status = DeviceHealthStatus.Alive;
             state.LastResult = "heartbeat";
 
-            if (HasNormalAbnormalBoundaryChange(before, state.Status))
+            decisionState.AliveStreak = _decisionThresholdCount;
+            decisionState.AbnormalStreak = 0;
+            decisionState.LastFinalStatus = DeviceHealthStatus.Alive;
+
+            if (HasFinalNormalAbnormalBoundaryChange(beforeFinal, decisionState.LastFinalStatus))
             {
                 transition = new DeviceStatusTransition
                 {
                     Uid = state.Uid,
-                    From = before,
-                    To = state.Status,
+                    From = beforeFinal,
+                    To = decisionState.LastFinalStatus,
                     Trigger = "heartbeat",
                     Result = state.LastResult,
                     OccurredUtc = now
@@ -108,29 +124,53 @@ public sealed class DeviceRegistry
 
     /// <summary>
     /// 套用探測結果並安排下次檢查時間。
-    /// 若跨越正常/異常邊界，會回傳轉換事件。
+    /// 需達到連續判定次數才會成為最終正常/異常；未達次數時為 Unknown。
     /// </summary>
-    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
+    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus observedStatus, string result, TimeSpan nextDelay)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
+        if (!_decisionStates.TryGetValue(state.Uid, out DeviceDecisionState? decisionState))
+        {
+            return null;
+        }
+
         lock (state)
         {
-            DeviceHealthStatus before = state.Status;
+            bool observedAlive = observedStatus == DeviceHealthStatus.Alive;
+            DeviceHealthStatus beforeFinal = decisionState.LastFinalStatus;
+            DeviceHealthStatus afterStatus = DeviceHealthStatus.Unknown;
 
-            state.Status = status;
-            state.LastCheckedUtc = now;
-            state.LastResult = result;
-
-            // 只有確認存活時才刷新 LastSeen。
-            if (status == DeviceHealthStatus.Alive)
+            if (observedAlive)
             {
-                state.LastSeenUtc = now;
+                decisionState.AliveStreak++;
+                decisionState.AbnormalStreak = 0;
+
+                if (decisionState.AliveStreak >= _decisionThresholdCount)
+                {
+                    afterStatus = DeviceHealthStatus.Alive;
+                    decisionState.LastFinalStatus = DeviceHealthStatus.Alive;
+                    state.LastSeenUtc = now;
+                }
+            }
+            else
+            {
+                decisionState.AbnormalStreak++;
+                decisionState.AliveStreak = 0;
+
+                if (decisionState.AbnormalStreak >= _decisionThresholdCount)
+                {
+                    afterStatus = observedStatus;
+                    decisionState.LastFinalStatus = observedStatus;
+                }
             }
 
+            state.Status = afterStatus;
+            state.LastCheckedUtc = now;
+            state.LastResult = result;
             state.NextCheckUtc = now.Add(nextDelay);
 
-            if (!HasNormalAbnormalBoundaryChange(before, status))
+            if (!HasFinalNormalAbnormalBoundaryChange(beforeFinal, decisionState.LastFinalStatus))
             {
                 return null;
             }
@@ -138,8 +178,8 @@ public sealed class DeviceRegistry
             return new DeviceStatusTransition
             {
                 Uid = state.Uid,
-                From = before,
-                To = status,
+                From = beforeFinal,
+                To = decisionState.LastFinalStatus,
                 Trigger = "probe",
                 Result = result,
                 OccurredUtc = now
@@ -147,8 +187,11 @@ public sealed class DeviceRegistry
         }
     }
 
-    private static bool HasNormalAbnormalBoundaryChange(DeviceHealthStatus before, DeviceHealthStatus after)
-        => IsNormal(before) != IsNormal(after);
+    private static bool HasFinalNormalAbnormalBoundaryChange(DeviceHealthStatus before, DeviceHealthStatus after)
+        => IsFinalNormal(before) != IsFinalNormal(after) && IsFinalVerdict(before) && IsFinalVerdict(after);
 
-    private static bool IsNormal(DeviceHealthStatus status) => status == DeviceHealthStatus.Alive;
+    private static bool IsFinalNormal(DeviceHealthStatus status) => status == DeviceHealthStatus.Alive;
+
+    private static bool IsFinalVerdict(DeviceHealthStatus status)
+        => status == DeviceHealthStatus.Alive || status == DeviceHealthStatus.Busy || status == DeviceHealthStatus.Dead;
 }

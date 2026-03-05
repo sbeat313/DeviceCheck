@@ -18,6 +18,7 @@ builder.Services
     .Validate(o => o.CheckIntervalSeconds > 0, "DeviceCheck:CheckIntervalSeconds 必須大於 0")
     .Validate(o => o.BusyRetryDelaySeconds > 0, "DeviceCheck:BusyRetryDelaySeconds 必須大於 0")
     .Validate(o => o.RequestTimeoutSeconds > 0, "DeviceCheck:RequestTimeoutSeconds 必須大於 0")
+    .Validate(o => o.DecisionThresholdCount > 0, "DeviceCheck:DecisionThresholdCount 必須大於 0")
     .Validate(o => o.Uids.Count > 0, "DeviceCheck:Uids 不能為空")
     .Validate(o => o.NotificationRecipients.TrueForAll(x => !string.IsNullOrWhiteSpace(x)), "DeviceCheck:NotificationRecipients 不能包含空白收件人")
     .ValidateOnStart();

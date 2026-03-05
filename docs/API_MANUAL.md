@@ -18,7 +18,16 @@ DeviceCheck 提供設備狀態監控 API，支援：
 
 > 正常/異常切換規則：
 > - 正常：`Alive`
-> - 異常：非 `Alive`（`Unknown` / `Busy` / `Dead`）
+> - 異常：`Busy` / `Dead`（`Unknown` 為未達判定次數的過渡狀態）
+
+
+## 2.1 判定次數機制
+可透過 `DeviceCheck:DecisionThresholdCount` 設定連續判定次數（例如 3）：
+- 連續 `Alive` 未達 3 次前，狀態維持 `Unknown`。
+- 連續 `Busy/Dead` 未達 3 次前，狀態維持 `Unknown`。
+- 達到次數後才會最終判定為 `Alive` 或 `Busy/Dead`。
+- 通知僅在「最終判定」跨越正常/異常時發送。
+
 
 ---
 

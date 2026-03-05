@@ -32,13 +32,20 @@ public sealed class DeviceCheckOptions
     public int RequestTimeoutSeconds { get; set; } = 10;
 
     /// <summary>
+    /// 連續判定次數。
+    /// 例如設定 3，需連續 3 次探測結果一致（Alive 或 非Alive）才會最終判定為正常或異常。
+    /// 未達次數時狀態維持 Unknown。
+    /// </summary>
+    public int DecisionThresholdCount { get; set; } = 3;
+
+    /// <summary>
     /// 需要列管的設備 UID 清單。
     /// </summary>
     public List<int> Uids { get; set; } = [];
 
     /// <summary>
     /// 通知收件對象（可填姓名、群組名稱或電子郵件）。
-    /// 當設備狀態從「正常(Alive)」變「異常(非 Alive)」或反向變化時會發送通知。
+    /// 當設備狀態從「正常(Alive)」變「異常(Busy/Dead)」或反向變化時會發送通知。
     /// </summary>
     public List<string> NotificationRecipients { get; set; } = [];
 }
