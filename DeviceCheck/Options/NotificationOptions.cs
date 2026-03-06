@@ -16,9 +16,4 @@ public sealed class NotificationOptions
     /// 通知接收服務 API URL。
     /// </summary>
     public string EndpointUrl { get; set; } = "http://localhost:5058/api/notifications";
-
-    /// <summary>
-    /// 通知對象（收件人）。
-    /// </summary>
-    public List<string> Recipients { get; set; } = [];
 }

@@ -27,6 +27,7 @@ public sealed class DeviceRegistry
             _devices.TryAdd(uid, new DeviceState
             {
                 Uid = uid,
+                Alias = options.Value.UidAliases.TryGetValue(uid, out string? alias) ? alias : uid.ToString(),
                 LastSeenUtc = now,
                 NextCheckUtc = now
             });
@@ -42,6 +43,24 @@ public sealed class DeviceRegistry
     /// 取得單一設備狀態；若未列管則回傳 null。
     /// </summary>
     public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out DeviceState? state) ? state : null;
+
+    /// <summary>
+    /// 更新設備別名。
+    /// </summary>
+    public bool SetAlias(int uid, string alias)
+    {
+        if (!_devices.TryGetValue(uid, out DeviceState? state))
+        {
+            return false;
+        }
+
+        lock (state)
+        {
+            state.Alias = alias;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// 處理設備心跳：更新 LastSeen 並把 NextCheck 往後延。
@@ -60,6 +79,7 @@ public sealed class DeviceRegistry
             state.NextCheckUtc = now.Add(_checkInterval);
             state.Status = DeviceHealthStatus.Alive;
             state.LastResult = "heartbeat";
+            state.ConsecutiveDeadCount = 0;
         }
 
         return true;
@@ -90,8 +110,9 @@ public sealed class DeviceRegistry
 
     /// <summary>
     /// 套用探測結果並安排下次檢查時間。
+    /// Dead 需要連續達標才視為確認異常，達標前狀態為 Unknown。
     /// </summary>
-    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay)
+    public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay, int deadConsecutiveThreshold)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         DeviceStatusTransition? transition = null;
@@ -99,25 +120,27 @@ public sealed class DeviceRegistry
         lock (state)
         {
             DeviceHealthStatus previousStatus = state.Status;
-            state.Status = status;
             state.LastCheckedUtc = now;
             state.LastResult = result;
 
+            state.Status = ResolveStatusWithDeadThreshold(state, status, deadConsecutiveThreshold);
+
             // 只有確認存活時才刷新 LastSeen。
-            if (status == DeviceHealthStatus.Alive)
+            if (state.Status == DeviceHealthStatus.Alive)
             {
                 state.LastSeenUtc = now;
             }
 
             state.NextCheckUtc = now.Add(nextDelay);
 
-            if (HasNormalAbnormalChanged(previousStatus, status))
+            if (HasDeadBoundaryChanged(previousStatus, state.Status))
             {
                 transition = new DeviceStatusTransition
                 {
                     Uid = state.Uid,
+                    Alias = state.Alias,
                     FromStatus = previousStatus,
-                    ToStatus = status,
+                    ToStatus = state.Status,
                     OccurredAtUtc = now,
                     Result = result
                 };
@@ -127,10 +150,40 @@ public sealed class DeviceRegistry
         return transition;
     }
 
-    private static bool HasNormalAbnormalChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
+    private static DeviceHealthStatus ResolveStatusWithDeadThreshold(DeviceState state, DeviceHealthStatus probedStatus, int deadConsecutiveThreshold)
     {
-        bool previousNormal = previous == DeviceHealthStatus.Alive;
-        bool currentNormal = current == DeviceHealthStatus.Alive;
-        return previousNormal != currentNormal;
+        if (probedStatus == DeviceHealthStatus.Alive)
+        {
+            state.ConsecutiveDeadCount = 0;
+            return DeviceHealthStatus.Alive;
+        }
+
+        if (probedStatus == DeviceHealthStatus.Busy)
+        {
+            state.ConsecutiveDeadCount = 0;
+            return DeviceHealthStatus.Busy;
+        }
+
+        if (probedStatus == DeviceHealthStatus.Dead)
+        {
+            state.ConsecutiveDeadCount++;
+            return state.ConsecutiveDeadCount >= deadConsecutiveThreshold
+                ? DeviceHealthStatus.Dead
+                : DeviceHealthStatus.Unknown;
+        }
+
+        state.ConsecutiveDeadCount = 0;
+        return DeviceHealthStatus.Unknown;
+    }
+
+    /// <summary>
+    /// 僅在「已確認異常（Dead）」邊界切換時才觸發通知。
+    /// Alive/Busy/Unknown 之間互轉不通知。
+    /// </summary>
+    private static bool HasDeadBoundaryChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
+    {
+        bool previousIsDead = previous == DeviceHealthStatus.Dead;
+        bool currentIsDead = current == DeviceHealthStatus.Dead;
+        return previousIsDead != currentIsDead;
     }
 }

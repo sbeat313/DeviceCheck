@@ -32,7 +32,18 @@ public sealed class DeviceCheckOptions
     public int RequestTimeoutSeconds { get; set; } = 10;
 
     /// <summary>
+    /// 連續幾次探測為 dead 才正式判定為 Dead。
+    /// 在達到門檻前會先標記為 Unknown。
+    /// </summary>
+    public int DeadConsecutiveThreshold { get; set; } = 3;
+
+    /// <summary>
     /// 需要列管的設備 UID 清單。
     /// </summary>
     public List<int> Uids { get; set; } = [];
+
+    /// <summary>
+    /// 設備別名設定，Key 為 UID，Value 為中文別名。
+    /// </summary>
+    public Dictionary<int, string> UidAliases { get; set; } = new();
 }
