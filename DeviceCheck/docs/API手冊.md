@@ -48,9 +48,9 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
 ```json
 {
   "uid": 1001,
-  "fromStatus": "Unknown",
+  "fromStatus": "Alive",
   "toStatus": "Dead",
-  "message": "設備 1001 狀態由 Unknown 變更為 Dead，探測結果：503 ServiceUnavailable",
+  "message": "設備 1001 狀態由 Alive 變更為 Dead，探測結果：503 ServiceUnavailable",
   "occurredAtUtc": "2026-01-01T10:00:00Z",
   "recipients": ["ops-team@company.local", "oncall@company.local"]
 }
@@ -68,3 +68,4 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
 - `Dead` 需連續達到 `DeviceCheck:DeadConsecutiveThreshold` 才會成立。
 - 未達門檻前，探測結果即使為 dead，狀態仍為 `Unknown`。
 - 通知僅在 `Dead` 與非 `Dead` 之間切換時送出。
+- 通知內容中的非 `Dead` 狀態會統一呈現為 `Alive`（例如 `Unknown -> Dead` 會顯示為 `Alive -> Dead`）。
