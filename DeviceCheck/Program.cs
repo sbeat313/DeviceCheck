@@ -5,11 +5,13 @@ using NLog.Web;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// 業務設定集中於 config.json，啟用 reloadOnChange 讓設定調整可即時生效。
 builder.Configuration.AddJsonFile("config.json", optional: false, reloadOnChange: true);
 
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 
+// DeviceCheck 監控主設定驗證。
 builder.Services
     .AddOptions<DeviceCheckOptions>()
     .Bind(builder.Configuration.GetSection(DeviceCheckOptions.SectionName))
@@ -20,6 +22,7 @@ builder.Services
     .Validate(o => o.Uids.Count > 0, "DeviceCheck:Uids 不能為空")
     .ValidateOnStart();
 
+// 通知設定驗證（通知啟用時必須提供合法 Endpoint）。
 builder.Services
     .AddOptions<NotificationOptions>()
     .Bind(builder.Configuration.GetSection(NotificationOptions.SectionName))
@@ -37,9 +40,11 @@ builder.Services.AddSwaggerGen();
 
 WebApplication app = builder.Build();
 
+// 僅提供 API，不做環境區分，啟動即開放 Swagger 方便測試與整合。
 app.UseSwagger();
 app.UseSwaggerUI();
 
+// 設備主動心跳：成功則刷新 LastSeen 與下一次檢查時間。
 app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registry) =>
 {
     return registry.Touch(uid)
@@ -49,6 +54,7 @@ app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registr
 
 app.MapGet("/api/devices", (DeviceRegistry registry) => Results.Ok(registry.GetAll()));
 
+// 查詢單一設備目前狀態。
 app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
     DeviceState? state = registry.Get(uid);
@@ -57,6 +63,7 @@ app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 
 app.MapPut("/api/devices/{uid:int}/alias", (int uid, UpdateAliasRequest request, DeviceRegistry registry, AliasConfigService aliasConfigService) =>
 {
+    // 避免空白別名寫入。
     string alias = request.Alias.Trim();
     if (string.IsNullOrWhiteSpace(alias))
     {
