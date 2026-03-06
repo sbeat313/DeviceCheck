@@ -51,8 +51,7 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
   "fromStatus": "Alive",
   "toStatus": "Dead",
   "message": "設備 1001 狀態由 Alive 變更為 Dead，探測結果：503 ServiceUnavailable",
-  "occurredAtUtc": "2026-01-01T10:00:00Z",
-  "recipients": ["ops-team@company.local", "oncall@company.local"]
+  "occurredAtUtc": "2026-01-01T10:00:00Z"
 }
 ```
 

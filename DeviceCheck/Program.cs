@@ -21,7 +21,6 @@ builder.Services
     .AddOptions<NotificationOptions>()
     .Bind(builder.Configuration.GetSection(NotificationOptions.SectionName))
     .Validate(o => !o.Enabled || Uri.TryCreate(o.EndpointUrl, UriKind.Absolute, out _), "Notification:EndpointUrl 必須是合法的絕對 URL")
-    .Validate(o => !o.Enabled || o.Recipients.Count > 0, "Notification:Recipients 在啟用通知時不能為空")
     .ValidateOnStart();
 
 builder.Services.AddSingleton<DeviceRegistry>();
@@ -29,7 +28,13 @@ builder.Services.AddHttpClient<DeviceProbeClient>();
 builder.Services.AddHttpClient<NotificationClient>();
 builder.Services.AddHostedService<DeviceMonitorService>();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 WebApplication app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapPost("/api/devices/{uid:int}/heartbeat", (int uid, DeviceRegistry registry) =>
 {

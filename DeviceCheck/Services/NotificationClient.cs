@@ -18,12 +18,6 @@ public sealed class NotificationClient(HttpClient httpClient, IOptions<Notificat
             return;
         }
 
-        if (_options.Recipients.Count == 0)
-        {
-            logger.LogWarning("Notification 已啟用但 Recipients 為空，略過 UID {Uid} 的通知", transition.Uid);
-            return;
-        }
-
         DeviceHealthStatus fromStatusForNotification = NormalizeBoundaryStatus(transition.FromStatus);
         DeviceHealthStatus toStatusForNotification = NormalizeBoundaryStatus(transition.ToStatus);
 
@@ -33,8 +27,7 @@ public sealed class NotificationClient(HttpClient httpClient, IOptions<Notificat
             FromStatus = fromStatusForNotification.ToString(),
             ToStatus = toStatusForNotification.ToString(),
             OccurredAtUtc = transition.OccurredAtUtc,
-            Message = $"設備 {transition.Uid} 狀態由 {fromStatusForNotification} 變更為 {toStatusForNotification}，探測結果：{transition.Result}",
-            Recipients = _options.Recipients
+            Message = $"設備 {transition.Uid} 狀態由 {fromStatusForNotification} 變更為 {toStatusForNotification}，探測結果：{transition.Result}"
         };
 
         try

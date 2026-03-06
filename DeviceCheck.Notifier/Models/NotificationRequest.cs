@@ -11,6 +11,4 @@ public sealed class NotificationRequest
     public string Message { get; set; } = string.Empty;
 
     public DateTimeOffset OccurredAtUtc { get; set; }
-
-    public List<string> Recipients { get; set; } = [];
 }
