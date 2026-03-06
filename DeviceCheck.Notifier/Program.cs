@@ -2,8 +2,10 @@ using DeviceCheck.Notifier.Models;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// 極簡通知接收服務：僅接收並記錄 DeviceCheck 的狀態轉換通知。
 WebApplication app = builder.Build();
 
+// 接收通知事件並以結構化日誌輸出。
 app.MapPost("/api/notifications", (NotificationRequest request, ILoggerFactory loggerFactory) =>
 {
     ILogger logger = loggerFactory.CreateLogger("Notifier");
@@ -22,6 +24,7 @@ app.MapPost("/api/notifications", (NotificationRequest request, ILoggerFactory l
     });
 });
 
+// 健康檢查端點。
 app.MapGet("/", () => Results.Ok(new { service = "DeviceCheck.Notifier", status = "running" }));
 
 app.Run();

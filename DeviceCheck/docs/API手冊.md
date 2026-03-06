@@ -1,15 +1,14 @@
 # DeviceCheck API 手冊
 
-## 1. DeviceCheck 主服務 API
-
+## 1. DeviceCheck 主服務
 Base URL 範例：`http://localhost:5000`
 
 ### 1.1 心跳回報
 - **Method**: `POST`
 - **Path**: `/api/devices/{uid}/heartbeat`
-- **說明**: 設備主動回報存活，會更新 `LastSeenUtc` 並延後下次檢查時間。
+- **用途**: 設備主動回報存活，刷新 `LastSeenUtc` 並延後下次檢查。
 
-**成功回應 (200)**
+成功（200）：
 ```json
 {
   "uid": 1001,
@@ -17,7 +16,7 @@ Base URL 範例：`http://localhost:5000`
 }
 ```
 
-**失敗回應 (404)**
+失敗（404）：
 ```json
 {
   "uid": 9999,
@@ -25,29 +24,35 @@ Base URL 範例：`http://localhost:5000`
 }
 ```
 
-### 1.2 取得所有設備狀態
+---
+
+### 1.2 查詢全部設備
 - **Method**: `GET`
 - **Path**: `/api/devices`
-- **說明**: 取得目前所有列管 UID 狀態（含 `alias`）。
+- **用途**: 取得所有列管 UID 狀態（含 `alias`）。
 
-### 1.3 取得單一設備狀態
+---
+
+### 1.3 查詢單一設備
 - **Method**: `GET`
 - **Path**: `/api/devices/{uid}`
-- **說明**: 查詢指定 UID 狀態（含 `alias`）。
+- **用途**: 查詢指定 UID 狀態（含 `alias`）。
+
+---
 
 ### 1.4 更新設備別名
 - **Method**: `PUT`
 - **Path**: `/api/devices/{uid}/alias`
-- **說明**: 更新指定 UID 的中文別名，會同步寫回 `config.json`。
+- **用途**: 更新設備中文別名，並同步回寫 `config.json`。
 
-**Request Body**
+Request Body：
 ```json
 {
   "alias": "機台A"
 }
 ```
 
-**成功回應 (200)**
+成功（200）：
 ```json
 {
   "uid": 1001,
@@ -56,16 +61,17 @@ Base URL 範例：`http://localhost:5000`
 }
 ```
 
-## 2. DeviceCheck.Notifier 通知接收 API
+---
 
-Base URL（預設固定）: `http://127.0.0.1:5058`
+## 2. DeviceCheck.Notifier
+Base URL（預設）：`http://127.0.0.1:5058`
 
 ### 2.1 接收狀態轉換通知
 - **Method**: `POST`
 - **Path**: `/api/notifications`
-- **說明**: 接收 DeviceCheck 發出的「確認異常 Dead 邊界切換」通知。
+- **用途**: 接收主服務送出的 Dead 邊界通知。
 
-**Request Body**
+Request Body：
 ```json
 {
   "uid": 1001,
@@ -77,15 +83,22 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
 }
 ```
 
-**成功回應 (200)**
+成功（200）：
 ```json
 {
   "message": "notification accepted"
 }
 ```
 
-## 3. 狀態與告警補充
-- `Dead` 需連續達到 `DeviceCheck:DeadConsecutiveThreshold` 才會成立。
-- 未達門檻前，探測結果即使為 dead，狀態仍為 `Unknown`。
-- 通知僅在 `Dead` 與非 `Dead` 之間切換時送出。
-- 通知內容中的非 `Dead` 狀態會統一呈現為 `Alive`（例如 `Unknown -> Dead` 會顯示為 `Alive -> Dead`）。
+### 2.2 健康檢查
+- **Method**: `GET`
+- **Path**: `/`
+- **用途**: 確認 Notifier 服務是否正在運行。
+
+---
+
+## 3. 通知與狀態補充
+- `Dead` 必須連續達到 `DeadConsecutiveThreshold`。
+- 未達門檻前為 `Unknown`。
+- 通知只看 Dead 邊界，不看一般狀態互轉。
+- 通知中的非 Dead 狀態統一顯示為 `Alive`。
