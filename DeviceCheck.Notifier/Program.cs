@@ -17,8 +17,7 @@ app.MapPost("/api/notifications", (NotificationRequest request, ILoggerFactory l
 
     return Results.Ok(new
     {
-        message = "notification accepted",
-        receivedRecipients = request.Recipients.Count
+        message = "notification accepted"
     });
 });
 

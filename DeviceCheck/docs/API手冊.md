@@ -59,8 +59,7 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
 **成功回應 (200)**
 ```json
 {
-  "message": "notification accepted",
-  "receivedRecipients": 2
+  "message": "notification accepted"
 }
 ```
 
