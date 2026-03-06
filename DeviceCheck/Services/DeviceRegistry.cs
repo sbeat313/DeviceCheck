@@ -157,8 +157,8 @@ public sealed class DeviceRegistry
 
     private static bool HasNormalAbnormalChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
     {
-        bool previousNormal = previous == DeviceHealthStatus.Alive;
-        bool currentNormal = current == DeviceHealthStatus.Alive;
-        return previousNormal != currentNormal;
+        bool previousAbnormal = previous == DeviceHealthStatus.Dead;
+        bool currentAbnormal = current == DeviceHealthStatus.Dead;
+        return previousAbnormal != currentAbnormal;
     }
 }
