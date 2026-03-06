@@ -91,6 +91,7 @@ public sealed class DeviceRegistry
 
     /// <summary>
     /// 套用探測結果並安排下次檢查時間。
+    /// Dead 需要連續達標才視為確認異常，達標前狀態為 Unknown。
     /// </summary>
     public DeviceStatusTransition? UpdateAfterProbe(DeviceState state, DeviceHealthStatus status, string result, TimeSpan nextDelay, int deadConsecutiveThreshold)
     {
@@ -113,7 +114,7 @@ public sealed class DeviceRegistry
 
             state.NextCheckUtc = now.Add(nextDelay);
 
-            if (HasNormalAbnormalChanged(previousStatus, state.Status))
+            if (HasDeadBoundaryChanged(previousStatus, state.Status))
             {
                 transition = new DeviceStatusTransition
                 {
@@ -155,10 +156,14 @@ public sealed class DeviceRegistry
         return DeviceHealthStatus.Unknown;
     }
 
-    private static bool HasNormalAbnormalChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
+    /// <summary>
+    /// 僅在「已確認異常（Dead）」邊界切換時才觸發通知。
+    /// Alive/Busy/Unknown 之間互轉不通知。
+    /// </summary>
+    private static bool HasDeadBoundaryChanged(DeviceHealthStatus previous, DeviceHealthStatus current)
     {
-        bool previousAbnormal = previous == DeviceHealthStatus.Dead;
-        bool currentAbnormal = current == DeviceHealthStatus.Dead;
-        return previousAbnormal != currentAbnormal;
+        bool previousIsDead = previous == DeviceHealthStatus.Dead;
+        bool currentIsDead = current == DeviceHealthStatus.Dead;
+        return previousIsDead != currentIsDead;
     }
 }
