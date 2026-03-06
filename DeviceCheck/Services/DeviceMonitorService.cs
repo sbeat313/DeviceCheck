@@ -11,6 +11,7 @@ public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeCli
 {
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(options.Value.CheckIntervalSeconds);
     private readonly TimeSpan _busyRetryDelay = TimeSpan.FromSeconds(options.Value.BusyRetryDelaySeconds);
+    private readonly int _deadConsecutiveThreshold = Math.Max(1, options.Value.DeadConsecutiveThreshold);
 
     /// <summary>
     /// 主循環：每秒檢查一次是否有到期設備。
@@ -28,7 +29,7 @@ public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeCli
 
                 // busy 使用短延遲重試，其餘使用一般週期。
                 TimeSpan delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
-                DeviceStatusTransition? transition = registry.UpdateAfterProbe(device, status, result, delay);
+                DeviceStatusTransition? transition = registry.UpdateAfterProbe(device, status, result, delay, _deadConsecutiveThreshold);
 
                 if (transition is not null)
                 {

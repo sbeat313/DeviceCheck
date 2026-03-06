@@ -7,6 +7,8 @@ public sealed class DeviceStatusTransition
 {
     public int Uid { get; init; }
 
+    public string Alias { get; init; } = string.Empty;
+
     public DeviceHealthStatus FromStatus { get; init; }
 
     public DeviceHealthStatus ToStatus { get; init; }

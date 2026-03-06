@@ -18,20 +18,17 @@ public sealed class NotificationClient(HttpClient httpClient, IOptions<Notificat
             return;
         }
 
-        if (_options.Recipients.Count == 0)
-        {
-            logger.LogWarning("Notification 已啟用但 Recipients 為空，略過 UID {Uid} 的通知", transition.Uid);
-            return;
-        }
+        DeviceHealthStatus fromStatusForNotification = NormalizeBoundaryStatus(transition.FromStatus);
+        DeviceHealthStatus toStatusForNotification = NormalizeBoundaryStatus(transition.ToStatus);
 
         NotificationRequest request = new()
         {
             Uid = transition.Uid,
-            FromStatus = transition.FromStatus.ToString(),
-            ToStatus = transition.ToStatus.ToString(),
+            Alias = transition.Alias,
+            FromStatus = fromStatusForNotification.ToString(),
+            ToStatus = toStatusForNotification.ToString(),
             OccurredAtUtc = transition.OccurredAtUtc,
-            Message = $"設備 {transition.Uid} 狀態由 {transition.FromStatus} 變更為 {transition.ToStatus}，探測結果：{transition.Result}",
-            Recipients = _options.Recipients
+            Message = $"設備 {transition.Uid}（{transition.Alias}）狀態由 {fromStatusForNotification} 變更為 {toStatusForNotification}，探測結果：{transition.Result}"
         };
 
         try
@@ -46,5 +43,11 @@ public sealed class NotificationClient(HttpClient httpClient, IOptions<Notificat
         {
             logger.LogError(ex, "通知發送例外，UID {Uid}", transition.Uid);
         }
+    }
+
+    private static DeviceHealthStatus NormalizeBoundaryStatus(DeviceHealthStatus status)
+    {
+        // 通知語意僅聚焦在「是否 Dead」邊界，非 Dead 一律以 Alive 呈現。
+        return status == DeviceHealthStatus.Dead ? DeviceHealthStatus.Dead : DeviceHealthStatus.Alive;
     }
 }

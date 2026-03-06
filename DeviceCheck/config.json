@@ -1,0 +1,19 @@
+{
+  "DeviceCheck": {
+    "BaseUrl": "http://192.168.0.58:5099",
+    "CheckIntervalSeconds": 10,
+    "BusyRetryDelaySeconds": 3,
+    "RequestTimeoutSeconds": 10,
+    "Uids": [
+      77778
+    ],
+    "DeadConsecutiveThreshold": 3,
+    "UidAliases": {
+      "77778": "主機台"
+    }
+  },
+  "Notification": {
+    "Enabled": true,
+    "EndpointUrl": "http://127.0.0.1:5058/api/notifications"
+  }
+}

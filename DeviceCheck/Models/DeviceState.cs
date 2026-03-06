@@ -8,6 +8,9 @@ public sealed class DeviceState
     /// <summary>設備 UID。</summary>
     public int Uid { get; init; }
 
+    /// <summary>設備中文別名。</summary>
+    public string Alias { get; set; } = string.Empty;
+
     /// <summary>目前健康狀態。</summary>
     public DeviceHealthStatus Status { get; set; } = DeviceHealthStatus.Unknown;
 
@@ -22,4 +25,7 @@ public sealed class DeviceState
 
     /// <summary>最後一次檢查結果訊息。</summary>
     public string LastResult { get; set; } = "not checked";
+
+    /// <summary>連續 dead 探測次數。</summary>
+    public int ConsecutiveDeadCount { get; set; }
 }
