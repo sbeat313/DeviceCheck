@@ -24,10 +24,11 @@ public sealed class NotificationClient(HttpClient httpClient, IOptions<Notificat
         NotificationRequest request = new()
         {
             Uid = transition.Uid,
+            Alias = transition.Alias,
             FromStatus = fromStatusForNotification.ToString(),
             ToStatus = toStatusForNotification.ToString(),
             OccurredAtUtc = transition.OccurredAtUtc,
-            Message = $"設備 {transition.Uid} 狀態由 {fromStatusForNotification} 變更為 {toStatusForNotification}，探測結果：{transition.Result}"
+            Message = $"設備 {transition.Uid}（{transition.Alias}）狀態由 {fromStatusForNotification} 變更為 {toStatusForNotification}，探測結果：{transition.Result}"
         };
 
         try

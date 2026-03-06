@@ -41,4 +41,9 @@ public sealed class DeviceCheckOptions
     /// 需要列管的設備 UID 清單。
     /// </summary>
     public List<int> Uids { get; set; } = [];
+
+    /// <summary>
+    /// 設備別名設定，Key 為 UID，Value 為中文別名。
+    /// </summary>
+    public Dictionary<int, string> UidAliases { get; set; } = new();
 }

@@ -27,6 +27,7 @@ public sealed class DeviceRegistry
             _devices.TryAdd(uid, new DeviceState
             {
                 Uid = uid,
+                Alias = options.Value.UidAliases.TryGetValue(uid, out string? alias) ? alias : uid.ToString(),
                 LastSeenUtc = now,
                 NextCheckUtc = now
             });
@@ -42,6 +43,24 @@ public sealed class DeviceRegistry
     /// 取得單一設備狀態；若未列管則回傳 null。
     /// </summary>
     public DeviceState? Get(int uid) => _devices.TryGetValue(uid, out DeviceState? state) ? state : null;
+
+    /// <summary>
+    /// 更新設備別名。
+    /// </summary>
+    public bool SetAlias(int uid, string alias)
+    {
+        if (!_devices.TryGetValue(uid, out DeviceState? state))
+        {
+            return false;
+        }
+
+        lock (state)
+        {
+            state.Alias = alias;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// 處理設備心跳：更新 LastSeen 並把 NextCheck 往後延。
@@ -119,6 +138,7 @@ public sealed class DeviceRegistry
                 transition = new DeviceStatusTransition
                 {
                     Uid = state.Uid,
+                    Alias = state.Alias,
                     FromStatus = previousStatus,
                     ToStatus = state.Status,
                     OccurredAtUtc = now,

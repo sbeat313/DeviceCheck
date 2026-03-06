@@ -7,6 +7,8 @@ public sealed class NotificationRequest
 {
     public int Uid { get; set; }
 
+    public string Alias { get; set; } = string.Empty;
+
     public string FromStatus { get; set; } = string.Empty;
 
     public string ToStatus { get; set; } = string.Empty;

@@ -1,8 +1,11 @@
+using DeviceCheck.Models;
 using DeviceCheck.Options;
 using DeviceCheck.Services;
 using NLog.Web;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("config.json", optional: true, reloadOnChange: true);
 
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
@@ -23,6 +26,7 @@ builder.Services
     .Validate(o => !o.Enabled || Uri.TryCreate(o.EndpointUrl, UriKind.Absolute, out _), "Notification:EndpointUrl 必須是合法的絕對 URL")
     .ValidateOnStart();
 
+builder.Services.AddSingleton<AliasConfigService>();
 builder.Services.AddSingleton<DeviceRegistry>();
 builder.Services.AddHttpClient<DeviceProbeClient>();
 builder.Services.AddHttpClient<NotificationClient>();
@@ -47,8 +51,25 @@ app.MapGet("/api/devices", (DeviceRegistry registry) => Results.Ok(registry.GetA
 
 app.MapGet("/api/devices/{uid:int}", (int uid, DeviceRegistry registry) =>
 {
-    DeviceCheck.Models.DeviceState? state = registry.Get(uid);
+    DeviceState? state = registry.Get(uid);
     return state is null ? Results.NotFound(new { uid, message = "uid not tracked" }) : Results.Ok(state);
+});
+
+app.MapPut("/api/devices/{uid:int}/alias", (int uid, UpdateAliasRequest request, DeviceRegistry registry, AliasConfigService aliasConfigService) =>
+{
+    string alias = request.Alias.Trim();
+    if (string.IsNullOrWhiteSpace(alias))
+    {
+        return Results.BadRequest(new { uid, message = "alias cannot be empty" });
+    }
+
+    if (!registry.SetAlias(uid, alias))
+    {
+        return Results.NotFound(new { uid, message = "uid not tracked" });
+    }
+
+    aliasConfigService.UpdateAlias(uid, alias);
+    return Results.Ok(new { uid, alias, message = "alias updated" });
 });
 
 app.Run();

@@ -28,12 +28,33 @@ Base URL 範例：`http://localhost:5000`
 ### 1.2 取得所有設備狀態
 - **Method**: `GET`
 - **Path**: `/api/devices`
-- **說明**: 取得目前所有列管 UID 狀態。
+- **說明**: 取得目前所有列管 UID 狀態（含 `alias`）。
 
 ### 1.3 取得單一設備狀態
 - **Method**: `GET`
 - **Path**: `/api/devices/{uid}`
-- **說明**: 查詢指定 UID 狀態。
+- **說明**: 查詢指定 UID 狀態（含 `alias`）。
+
+### 1.4 更新設備別名
+- **Method**: `PUT`
+- **Path**: `/api/devices/{uid}/alias`
+- **說明**: 更新指定 UID 的中文別名，會同步寫回 `config.json`。
+
+**Request Body**
+```json
+{
+  "alias": "機台A"
+}
+```
+
+**成功回應 (200)**
+```json
+{
+  "uid": 1001,
+  "alias": "機台A",
+  "message": "alias updated"
+}
+```
 
 ## 2. DeviceCheck.Notifier 通知接收 API
 
@@ -48,9 +69,10 @@ Base URL（預設固定）: `http://127.0.0.1:5058`
 ```json
 {
   "uid": 1001,
+  "alias": "機台A",
   "fromStatus": "Alive",
   "toStatus": "Dead",
-  "message": "設備 1001 狀態由 Alive 變更為 Dead，探測結果：503 ServiceUnavailable",
+  "message": "設備 1001（機台A）狀態由 Alive 變更為 Dead，探測結果：503 ServiceUnavailable",
   "occurredAtUtc": "2026-01-01T10:00:00Z"
 }
 ```

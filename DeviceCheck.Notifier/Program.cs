@@ -8,8 +8,9 @@ app.MapPost("/api/notifications", (NotificationRequest request, ILoggerFactory l
 {
     ILogger logger = loggerFactory.CreateLogger("Notifier");
     logger.LogInformation(
-        "[通知] UID={Uid}, 狀態由 {FromStatus} -> {ToStatus}, 訊息: {Message}, 時間: {OccurredAtUtc}",
+        "[通知] UID={Uid}, 別名={Alias}, 狀態由 {FromStatus} -> {ToStatus}, 訊息: {Message}, 時間: {OccurredAtUtc}",
         request.Uid,
+        request.Alias,
         request.FromStatus,
         request.ToStatus,
         request.Message,

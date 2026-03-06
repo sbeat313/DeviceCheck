@@ -8,6 +8,9 @@ public sealed class DeviceState
     /// <summary>設備 UID。</summary>
     public int Uid { get; init; }
 
+    /// <summary>設備中文別名。</summary>
+    public string Alias { get; set; } = string.Empty;
+
     /// <summary>目前健康狀態。</summary>
     public DeviceHealthStatus Status { get; set; } = DeviceHealthStatus.Unknown;
 
