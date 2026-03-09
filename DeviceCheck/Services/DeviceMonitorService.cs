@@ -48,25 +48,37 @@ public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeCli
     }
 
     /// <summary>
-    /// dead / busy 會在同一輪內依設定進行重試。
+    /// Dead 會消耗重試次數；Busy 不計入次數，只會等待後持續重測直到非 Busy。
     /// </summary>
     private async Task<(DeviceHealthStatus status, string result)> ProbeWithRetryAsync(int uid, CancellationToken cancellationToken)
     {
         (DeviceHealthStatus status, string result) = await probeClient.ProbeAsync(uid, cancellationToken);
+        int deadRetryAttempt = 0;
 
-        for (int attempt = 1; attempt <= _probeRetryCount; attempt++)
+        while (status is DeviceHealthStatus.Dead or DeviceHealthStatus.Busy)
         {
-            if (status is not (DeviceHealthStatus.Dead or DeviceHealthStatus.Busy))
+            if (status == DeviceHealthStatus.Dead)
             {
-                break;
-            }
+                if (deadRetryAttempt >= _probeRetryCount)
+                {
+                    break;
+                }
 
-            logger.LogInformation(
-                "UID {Uid} probe retry {Attempt}/{RetryCount} due to {Status}",
-                uid,
-                attempt,
-                _probeRetryCount,
-                status);
+                deadRetryAttempt++;
+
+                logger.LogInformation(
+                    "UID {Uid} probe retry {Attempt}/{RetryCount} due to Dead",
+                    uid,
+                    deadRetryAttempt,
+                    _probeRetryCount);
+            }
+            else
+            {
+                logger.LogInformation(
+                    "UID {Uid} probe returned Busy; waiting {Delay}s and probing again without consuming retry quota",
+                    uid,
+                    _probeRetryDelay.TotalSeconds);
+            }
 
             if (_probeRetryDelay > TimeSpan.Zero)
             {
