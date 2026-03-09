@@ -32,6 +32,17 @@ public sealed class DeviceCheckOptions
     public int RequestTimeoutSeconds { get; set; } = 10;
 
     /// <summary>
+    /// 探測回傳 Dead 或 Busy 時的額外重試次數。
+    /// 例如設定 2，代表單輪最多會呼叫 3 次（首次 + 2 次重試）。
+    /// </summary>
+    public int ProbeRetryCount { get; set; } = 2;
+
+    /// <summary>
+    /// Dead / Busy 重試間隔（秒）。
+    /// </summary>
+    public int ProbeRetryDelaySeconds { get; set; } = 1;
+
+    /// <summary>
     /// 連續幾次探測為 dead 才正式判定為 Dead。
     /// 在達到門檻前會先標記為 Unknown。
     /// </summary>

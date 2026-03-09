@@ -4,6 +4,8 @@
     "CheckIntervalSeconds": 10,
     "BusyRetryDelaySeconds": 3,
     "RequestTimeoutSeconds": 10,
+    "ProbeRetryCount": 2,
+    "ProbeRetryDelaySeconds": 1,
     "Uids": [
       77778
     ],
