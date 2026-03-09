@@ -17,8 +17,9 @@ builder.Services
     .Bind(builder.Configuration.GetSection(DeviceCheckOptions.SectionName))
     .Validate(o => Uri.TryCreate(o.BaseUrl, UriKind.Absolute, out _), "DeviceCheck:BaseUrl 必須是合法的絕對 URL")
     .Validate(o => o.CheckIntervalSeconds > 0, "DeviceCheck:CheckIntervalSeconds 必須大於 0")
-    .Validate(o => o.BusyRetryDelaySeconds > 0, "DeviceCheck:BusyRetryDelaySeconds 必須大於 0")
     .Validate(o => o.RequestTimeoutSeconds > 0, "DeviceCheck:RequestTimeoutSeconds 必須大於 0")
+    .Validate(o => o.ProbeRetryCount >= 0, "DeviceCheck:ProbeRetryCount 必須大於或等於 0")
+    .Validate(o => o.ProbeRetryDelaySeconds >= 0, "DeviceCheck:ProbeRetryDelaySeconds 必須大於或等於 0")
     .Validate(o => o.Uids.Count > 0, "DeviceCheck:Uids 不能為空")
     .ValidateOnStart();
 

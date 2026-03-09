@@ -22,14 +22,21 @@ public sealed class DeviceCheckOptions
     public int CheckIntervalSeconds { get; set; } = 10;
 
     /// <summary>
-    /// 回傳 busy 時的重試延遲（秒）。
-    /// </summary>
-    public int BusyRetryDelaySeconds { get; set; } = 3;
-
-    /// <summary>
     /// 呼叫外部 API 的逾時秒數。
     /// </summary>
     public int RequestTimeoutSeconds { get; set; } = 10;
+
+    /// <summary>
+    /// 探測回傳 Dead 或 Busy 時的額外重試次數。
+    /// 例如設定 2，代表單輪最多會呼叫 3 次（首次 + 2 次重試）。
+    /// </summary>
+    public int ProbeRetryCount { get; set; } = 2;
+
+    /// <summary>
+    /// Dead / Busy 重試間隔（秒）。
+    /// 同時用於同輪次重試等待，以及最終結果為 Busy 時的下次檢查延遲。
+    /// </summary>
+    public int ProbeRetryDelaySeconds { get; set; } = 1;
 
     /// <summary>
     /// 連續幾次探測為 dead 才正式判定為 Dead。
@@ -45,5 +52,5 @@ public sealed class DeviceCheckOptions
     /// <summary>
     /// 設備別名設定，Key 為 UID，Value 為中文別名。
     /// </summary>
-    public Dictionary<int, string> UidAliases { get; set; } = new();
+    public Dictionary<int, string> UidAliases { get; set; } = [];
 }

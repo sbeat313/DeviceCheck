@@ -12,7 +12,7 @@ public sealed class AliasConfigService(IHostEnvironment environment, IOptions<De
 {
     private readonly string _configPath = Path.Combine(environment.ContentRootPath, "config.json");
     private readonly DeviceCheckOptions _options = options.Value;
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
 
 
     public bool UpdateAlias(int uid, string alias)
@@ -25,15 +25,15 @@ public sealed class AliasConfigService(IHostEnvironment environment, IOptions<De
 
             if (File.Exists(_configPath))
             {
-                root = JsonNode.Parse(File.ReadAllText(_configPath))?.AsObject() ?? new JsonObject();
+                root = JsonNode.Parse(File.ReadAllText(_configPath))?.AsObject() ?? [];
             }
             else
             {
-                root = new JsonObject();
+                root = [];
             }
 
-            JsonObject deviceCheck = root[DeviceCheckOptions.SectionName]?.AsObject() ?? new JsonObject();
-            JsonObject aliases = deviceCheck["UidAliases"]?.AsObject() ?? new JsonObject();
+            JsonObject deviceCheck = root[DeviceCheckOptions.SectionName]?.AsObject() ?? [];
+            JsonObject aliases = deviceCheck["UidAliases"]?.AsObject() ?? [];
             aliases[uid.ToString()] = alias;
             deviceCheck["UidAliases"] = aliases;
             root[DeviceCheckOptions.SectionName] = deviceCheck;
