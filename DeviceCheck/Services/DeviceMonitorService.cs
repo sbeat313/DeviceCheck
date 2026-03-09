@@ -10,7 +10,6 @@ namespace DeviceCheck.Services;
 public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeClient probeClient, NotificationClient notificationClient, IOptions<DeviceCheckOptions> options, ILogger<DeviceMonitorService> logger) : BackgroundService
 {
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(options.Value.CheckIntervalSeconds);
-    private readonly TimeSpan _busyRetryDelay = TimeSpan.FromSeconds(options.Value.BusyRetryDelaySeconds);
     private readonly TimeSpan _probeRetryDelay = TimeSpan.FromSeconds(Math.Max(0, options.Value.ProbeRetryDelaySeconds));
     private readonly int _probeRetryCount = Math.Max(0, options.Value.ProbeRetryCount);
     private readonly int _deadConsecutiveThreshold = Math.Max(1, options.Value.DeadConsecutiveThreshold);
@@ -29,8 +28,8 @@ public sealed class DeviceMonitorService(DeviceRegistry registry, DeviceProbeCli
             {
                 (DeviceHealthStatus status, string result) = await ProbeWithRetryAsync(device.Uid, stoppingToken);
 
-                // busy 使用短延遲重試，其餘使用一般週期。
-                TimeSpan delay = status == DeviceHealthStatus.Busy ? _busyRetryDelay : _checkInterval;
+                // busy 使用 ProbeRetryDelaySeconds，其餘使用一般週期。
+                TimeSpan delay = status == DeviceHealthStatus.Busy ? _probeRetryDelay : _checkInterval;
                 DeviceStatusTransition? transition = registry.UpdateAfterProbe(device, status, result, delay, _deadConsecutiveThreshold);
 
                 if (transition is not null)

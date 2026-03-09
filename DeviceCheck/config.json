@@ -2,7 +2,6 @@
   "DeviceCheck": {
     "BaseUrl": "http://192.168.0.58:5099",
     "CheckIntervalSeconds": 10,
-    "BusyRetryDelaySeconds": 3,
     "RequestTimeoutSeconds": 10,
     "ProbeRetryCount": 2,
     "ProbeRetryDelaySeconds": 1,

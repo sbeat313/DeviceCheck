@@ -22,11 +22,6 @@ public sealed class DeviceCheckOptions
     public int CheckIntervalSeconds { get; set; } = 10;
 
     /// <summary>
-    /// 回傳 busy 時的重試延遲（秒）。
-    /// </summary>
-    public int BusyRetryDelaySeconds { get; set; } = 3;
-
-    /// <summary>
     /// 呼叫外部 API 的逾時秒數。
     /// </summary>
     public int RequestTimeoutSeconds { get; set; } = 10;
@@ -39,6 +34,7 @@ public sealed class DeviceCheckOptions
 
     /// <summary>
     /// Dead / Busy 重試間隔（秒）。
+    /// 同時用於同輪次重試等待，以及最終結果為 Busy 時的下次檢查延遲。
     /// </summary>
     public int ProbeRetryDelaySeconds { get; set; } = 1;
 
